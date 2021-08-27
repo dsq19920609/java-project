@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iwhalecloud.offer.mapper.UserMapper">
+    <resultMap id="BaseResultMap" type="com.iwhalecloud.offer.entity.User">
+        <id column="user_id" property="userId"/>
+        <result column="user_name" property="userName"/>
+        <result column="user_pwd" property="userPwd"/>
+        <result column="user_age" property="userAge"/>
+    </resultMap>
+    
+    <resultMap id="userDetailMap" type="com.iwhalecloud.offer.dto.resp.UserDetailResp">
+        <id property="userId" column="user_id"/>
+        <result property="userName" column="user_name"/>
+        <result property="userPwd" column="user_pwd"/>
+        <result property="userAge" column="user_age"/>
+        <collection property="orders" column="user_id"  select="selectUserOrders"/>
+    </resultMap>
+    
+    <select id="selectUserOrders" resultType="com.iwhalecloud.offer.entity.Order">
+        select * from `order` where user_id = #{user_id};
+    </select>
+
+
+
+    <select id="getUserById" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select * from user where user_id = #{userId}
+    </select>
+    
+    <select id="getUserList" resultType="com.iwhalecloud.offer.entity.User">
+        select * from USER
+    </select>
+
+    <insert id="insertUser" parameterType="com.iwhalecloud.offer.entity.User">
+        insert into user(user_id, user_name, user_pwd, user_age) values (#{userId}, #{userName}, #{userPwd}, #{userAge})
+    </insert>
+
+
+    <update id="updateUser" parameterType="com.iwhalecloud.offer.entity.User">
+        update user set user_name = #{req.userName},user_pwd = #{req.userPwd},user_age = #{req.userAge} where user_id = #{req.userId}
+    </update>
+
+    <delete id="deleteUser" parameterType="java.lang.String">
+        DELETE FROM USER WHERE user_id = #{userId}
+    </delete>
+
+    <select id="queryUserDetail" resultMap="userDetailMap" parameterType="java.lang.String">
+        select u.user_id, u.user_name, u.user_pwd, u.user_age
+        from `user` u where 1 = 1
+        <if test="userId != null and userId != ''">
+            and u.user_id = #{userId}
+        </if>
+    </select>
+
+    <select id="queryUserFuzzy" resultType="com.iwhalecloud.offer.entity.User" parameterType="com.iwhalecloud.offer.dto.req.QryUserReq">
+
+        select * from `user` where 1 = 1
+        <choose>
+            <when test="req.userName != null and req.userName != ''">
+                <bind name="pattern" value="'%' + req.userName + '%'"/>
+                and user_name like #{pattern}
+            </when>
+            <when test="req.userPwd != null and req.userPwd != '">
+                and user_pwd like concat('%', #{req.userPwd}, '%')
+            </when>
+            <otherwise>
+                and 1 = 2
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="getHashMap" parameterType="java.lang.String" resultType="hashMap">
+        select *
+        from `user` u where 1 = 1
+        <if test="userId != null and userId != ''">
+            and u.user_id = #{userId}
+        </if>
+    </select>
+
+    <!--<select id="getUserByIdTest" resultType="com.iwhalecloud.offer.entity.User">-->
+        <!--select * from  `user` u-->
+        <!--<where>-->
+            <!--<if test="userId != null and userId != ''">-->
+                <!--and u.user_id = #{userId}-->
+            <!--</if>-->
+        <!--</where>-->
+    <!--</select>-->
+
+    <!--<select id="getUserByIdTest" resultType="com.iwhalecloud.offer.entity.User">-->
+        <!--select * from `user` u-->
+        <!--<trim prefix="where" prefixOverrides="and | or">-->
+            <!--<if test="userId != null and userId != ''">-->
+                <!--and u.user_id = #{userId}-->
+            <!--</if>-->
+        <!--</trim>-->
+    <!--</select>-->
+
+    <select id="getUserByIdTest" resultType="com.iwhalecloud.offer.entity.User">
+        select * from `user`
+        <where>
+            <choose>
+                <when test="userId != null and userId != ''">
+                    user_id = #{userId}
+                </when>
+                <when test="userId = '1'">
+                    <bind name="pattern" value="'%' + userId + '%'"/>
+                    user_id like #{pattern}
+                </when>
+                <when test="userId = '2'">
+                    user_id like CONNECT(CONNECT ('%', #{userId}), '%')
+                </when>
+            </choose>
+        </where>
+    </select>
+
+    <!--<update id="updateUserTest">-->
+        <!--update `user`-->
+        <!--<set>-->
+            <!--<if test="req.userName != null">-->
+                <!--user_name = #{userName}-->
+            <!--</if>-->
+        <!--</set>-->
+    <!--</update>-->
+    <update id="updateUserTest" parameterType="com.iwhalecloud.offer.entity.User">
+        update `user`
+        <trim prefix="set" suffixOverrides=",">
+            <if test="req.userName != null">
+                user_name = #{req.userName},
+            </if>
+            <if test="req.userPwd != null">
+                user_pwd = #{req.userPwd}
+            </if>
+        </trim>
+    </update>
+
+</mapper>

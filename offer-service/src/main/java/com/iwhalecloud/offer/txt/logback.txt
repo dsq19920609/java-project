@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+一、configuration 标签属性：
+scan: 当配置文件发生改变，将会被重新加载，默认为true
+scanPeriod: 检查配置文件是否修改的时间间隔，如果没有时间单位默认为ms，默认时间间隔为1分钟，需要设置scan为true
+debug: 当设置为true时，将打印logback的内部日志信息，实时查看logback运行状态，默认false
+
+
+二、logger、root标签
+logger用来设置一个包，具体的类日志打印级别，以及指定appender,logger可以包含0个或者多个appender-ref元素，
+标识这个appender将添加到这个logger。
+属性：
+name: 一个包或者具体的类
+level: 用来设置打印级别，从低到高为：TRACE,DEBUG,INFO,WARN,ERROR
+additivity: 是否想上级logger传递打印信息，默认为true
+
+root也是一个logger元素，是根logger，只有一个level属性，因为他的name就是root
+1、当logger标签没有设置level属性时，会继承父级的level，root是logger的父级，因此logger继承root的level
+2、如果没有设置additivity即additivity = true， 则logger的打印信息向父级root传递，如下面
+com.iwhalecloud.offer.controller包日志的打印，如果不指定默认additivity = true 因此会打印两遍日志信息，logger和root都有打印日志，
+当additivity = false时，logger不在将打印信息传递给父级root。因此只有一遍打印记录
+3、没有配置appender-ref，表示此logger不会打印出任何信息
+
+三、appender标签
+appender是负责写日志的组件，appender有两个必要属性 name, class
+name: 指定appender的名称
+class： 指定appender的全限定名
+如下面的配置中有encoder 和 layout两种配置方式pattern，对参数进行格式化
+<encoder>是0.9.19版本之后引进的，以前的版本使用<layout>，logback极力推荐的是使用<encoder>而不是<layout>
+**最常用的FileAppender和它的子类的期望是使用<encoder>而不再使用<layout>
+
+FileAppender: 作用是将日志写到日志文件
+//appender的几个节点：
+file: 表示写入的文件名，可以使用相对目录也可以使用绝对目录，没有则创建
+append: true 表示追加到日志文件末尾，false表示清空日志文件
+encoder：输出格式
+prudent：如果为true表示日志会被安全的写入，即使其他的FileAppender也向文件写日志，效率低，默认为false
+
+RollingFileAppender: 滚动记录文件，先将日志记录到指定文件，当符合某个条件时，再将日志记录到其他文件，
+RollingFileAppender配置的比较灵活，因此使用比较多。
+
+rollingPolicy：滚动策略 当发生滚动时，定义RollingFileAppender的滚动行为
+TimeBasedRollingPolicy：根据时间指定滚动策略，即负责滚动也负责触发滚动
+SizeBasedTriggeringPolicy：按照文件大小进行滚动
+
+//rollingPolicy节点:
+fileNamePattern: 必要节点，包含文件名和”%d”转换符，”%d”可以包含一个Java.text.SimpleDateFormat指定的时间格式，
+如%d{yyyy-MM}，如果直接使用%d那么格式为yyyy-MM-dd，RollingFileAppender的file节点可有可无，通过设置file可以问
+活动文档和归档文件指定不同的位置。
+maxHistory： 可选节点，保留天数
+
+
+
+四、Filter标签
+filter标签是appender的子标签，表示在给定当前日志级别下再进行一次过滤，
+最基本的Filter有ch.qos.logback.classic.filter.LevelFilter和ch.qos.logback.classic.filter.ThresholdFilter
+
+看到尽管<logger>配置的是DEBUG，但是输出的只有warn，因为在<filter>中对匹配到WARN级别时做了ACCEPT（接受），
+对未匹配到WARN级别时做了DENY（拒绝），当然只能打印出WARN级别的日志。
+
+因为ThresholdFilter的策略是，会将日志级别小于<level>的全部进行过滤，因此虽然指定了DEBUG级别，但是只有INFO及以上级别的才能被打印出来。
+
+
+五、encoder
+1、把日志信息转化为字节数组
+2、把字节数组写出到输出流
+目前PatternLayoutEncoder是唯一有用的且默认的encoder，有一个<pattern>节点，就像上面演示的，用来设置日志的输入格式，
+使用“%+转换符”的方式，如果要输出”%”则必须使用”\%”对”%”进行转义。
+encoder参数：
+看到最后一列是”是否避免使用”，这是因为这些信息是无法直接拿到的（比如请求行号、调用方法名），logback必须通过一些特殊手段去获取这些数据
+（比如在日志打印出产生一个堆栈信息），这种操作会比较影响效率，因此除非必要，否则不建议打印这些数据。
+
+参数                                              作用                                         是否避免使用
+d{pattern}、date{pattern}      输出时间格式，模式同java.text.SimpleDateFormat兼容                    否
+t  thread                      输出产生日志的线程名称                                                否
+p  le  level                   输出日志级别                                                          否
+m  msg  message                输出应用程序提供的信息                                                否
+r  relative                    输出从程序启动到创建日志记录的时间，单位为毫秒                        否
+n                              输出平台相关的分行符，即 \n 或者 \r\n 即换行符                        否
+c{length}
+lo{length}
+logger{length}                 输出日志的logger名称：1、不输入表示输出完整的logger名称 2、输入0表示只输出logger最右边点号之后的字符串
+                               3、输入其他数字表示输出小数点最后边点号之间的字符数量
+
+六、滚动策略
+TimeBasedRollingPolicy、 SizeAndTimeBasedRollingPolicy、 FixedWindowRollingPolicy
+
+1、TimeBasedRollingPolicy  基于时间滚动策略
+时间滚动策略可以基于时间滚动按时间生成日志
+
+2、SizeAndTimeBasedRollingPolicy  基于大小和时间的滚动策略
+这个策略出现的原因就是对时间滚动策略的一个补充，使其不仅按时间进行生成而且考虑到文件大小的原因，
+因为在基于时间的滚动策略生成的日志文件，只是对一段时间总的日志大小做了限定，但是没有对每个日志文件的大小做限定，
+这就会造成个别日志文件过大，后期传递，阅读困难的问题，所以就有了这第二个策略
+
+3、FixedWindowRollingPolicy  基于固定窗口的滚动策略
+因为需要日志文件保持为某个特定的数量，防止滚动测策略导致过多的日志文件出现。
+这个策略出现得配合triggeringPolicy,给一个什么时候日志滚动一次的控制
+
+
+七、异步写日志
+日志通常来说都以文件形式记录到磁盘，例如使用<RollingFileAppender>，这样的话一次写日志就会发生一次磁盘IO，这对于性能是一种损耗，因此更多的，
+对于每次请求必打的日志（例如请求日志，记录请求API、参数、请求时间），我们会采取异步写日志的方式而不让此次写日志发生磁盘IO，阻塞线程从而造成不必要的性能损耗。
+（不要小看这个点，可以网上查一下服务端性能优化的文章，只是因为将日志改为异步写，整个QPS就有了大幅的提高）
+原理：
+当我们配置了AsyncAppender，系统启动时会初始化一条名为"AsyncAppender-Worker-ASYNC"的线程
+当Logging Event进入AsyncAppender后，AsyncAppender会调用appender方法，appender方法中再将event填入Buffer
+（使用的Buffer为BlockingQueue，具体实现为ArrayBlockingQueye）前，会先判断当前Buffer的容量以及丢弃日志特性是否开启，
+当消费能力不如生产能力时，AsyncAppender会将超出Buffer容量的Logging Event的级别进行丢弃，
+作为消费速度一旦跟不上生产速度导致Buffer溢出处理的一种方式。
+
+上面的线程的作用，就是从Buffer中取出Event，交给对应的appender进行后面的日志推送
+
+从上面的描述我们可以看出，AsyncAppender并不处理日志，只是将日志缓冲到一个BlockingQueue里面去，并在内部创建一个工作线程从队列头部获取日志，
+之后将获取的日志循环记录到附加的其他appender上去，从而达到不阻塞主线程的效果。因此AsyncAppender仅仅充当的是事件转发器，
+必须引用另外一个appender来做事。
+
+discardingThreshold，假如等于20则表示，表示当还剩20%容量时，将丢弃TRACE、DEBUG、INFO级别的Event，只保留WARN与ERROR级别的Event，
+为了保留所有的events，可以将这个值设置为0，默认值为queueSize/5
+
+queueSize比较好理解，BlockingQueue的最大容量，默认为256
+
+includeCallerData表示是否提取调用者数据，这个值被设置为true的代价是相当昂贵的，为了提升性能，默认当event被加入BlockingQueue时，
+event关联的调用者数据不会被提取，只有线程名这些比较简单的数据
+
+appender-ref表示AsyncAppender使用哪个具体的<appender>进行日志输出
+
+
+-->
+<configuration scan="true" scanPeriod="30 seconds" debug="false">
+
+    <property name="APP_LOG_FILE" value="./logs/test.log"/>
+
+    <!-- 控制台输出 -->
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <charset>utf-8</charset>
+            <pattern>%date [%thread] %-5level %logger{80} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--非滚动的日志 WARN -->
+    <appender name="file-warn" class="ch.qos.logback.core.FileAppender">
+        <file>${APP_LOG_FILE}</file>
+        <append>true</append>
+        <encoder>
+            <charset>utf-8</charset>
+            <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 时间滚动输出 level为 INFO 日志 -->
+    <appender name="file-info" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY </onMismatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>./logs/info.%d{yyyy-MM-dd}.log</FileNamePattern>
+            <!--保持30天的历史记录，总容量为3GB-->
+            <MaxHistory>30</MaxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%date [%thread] %-5level %logger{80} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 时间滚动输出 level为 DEBUG 日志 -->
+    <appender name="file-debug" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>DEBUG</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY </onMismatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <FileNamePattern>./logs/debug.%d{yyyy-MM-dd}.log</FileNamePattern>
+            <!--每个文件最多100MB，保留60天的历史记录，但最多20GB-->
+            <MaxHistory>60</MaxHistory>
+            <maxFileSize>100MB</maxFileSize>
+            <totalSizeCap>20GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%date [%thread] %-5level %logger{80} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 时间滚动输出 level为 ERROR 日志 -->
+    <appender name="file—error" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY </onMismatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <FileNamePattern>./logs/error.%d{yyyy-MM-dd}.log</FileNamePattern>
+            <MaxHistory>30</MaxHistory>
+            <minIndex>1</minIndex>
+            <maxIndex>3</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>5MB</maxFileSize>
+        </triggeringPolicy>
+        <encoder>
+            <pattern>%date [%thread] %-5level %logger{80} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ROLLING-FILE-1" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>D:/rolling-file-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%-4relative [%thread] %-5level %lo{35} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    <!-- 异步输出 -->
+    <appender name ="ASYNC" class= "ch.qos.logback.classic.AsyncAppender">
+        <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+        <queueSize>256</queueSize>
+        <!-- 添加附加的appender,最多只能添加一个 -->
+        <appender-ref ref ="ROLLING-FILE-1"/>
+    </appender>
+    <logger name="com.iwhalecloud.offer.dto.req" level="DEBUG">
+        <appender-ref ref="ASYNC" />
+    </logger>
+
+    <!--<appender name="console" class="ch.qos.logback.core.ConsoleAppender">-->
+        <!--<layout class="ch.qos.logback.classic.PatternLayout">-->
+            <!--<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger - %msg%n</pattern>-->
+        <!--</layout>-->
+    <!--</appender>-->
+    <!--<logger name="com.iwhalecloud.offer.controller" level="info" additivity="false">-->
+        <!--<appender-ref ref="console"/>-->
+    <!--</logger>-->
+
+    <logger name="org.apache.ibatis" level="INFO"/>
+    <logger name="java.sql.Connection" level="INFO" />
+    <logger name="java.sql.Statement" level="INFO" />
+    <logger name="java.sql.PreparedStatement" level="INFO" />
+
+    <root level="info">
+        <appender-ref ref="stdout"/>
+        <appender-ref ref="file-info"/>
+        <appender-ref ref="file—error"/>
+    </root>
+</configuration>

@@ -1,0 +1,8 @@
+mybatis中的动态sql主要分为一下几类：
+1、 if 语句简单的条件判断
+2、choose(when otherwise) 想当于java中的switch
+3、foreach 再实现mysql in查询的时候，用的最多
+4、where  只有用来简化sql语句中的where条件判断，智能处理and / or 不用担心多余导致语法错误
+5、set 用于更新
+6、trim 对包含的内容加上 prefix, suffix等 添加前缀或者后缀等
+

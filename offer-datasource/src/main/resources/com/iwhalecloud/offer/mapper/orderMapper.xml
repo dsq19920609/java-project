@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iwhalecloud.offer.mapper.OrderMapper">
+
+    <resultMap id="orderDetailMap" type="com.iwhalecloud.offer.dto.resp.OrderDetailResp">
+        <id property="offerId" column="offer_id"></id>
+        <result property="offerName" column="offer_name"/>
+        <result property="offerPrice" column="offer_price"/>
+        <result property="userId" column="user_id"/>
+        <association property="user" column="user_id"  select="queryUser"/>
+    </resultMap>
+
+    <select id="queryUser" resultType="com.iwhalecloud.offer.entity.User">
+        select * from `user` where user_id = #{user_id}
+    </select>
+
+    <select id="queryOrderDetail" resultMap="orderDetailMap" parameterType="java.lang.String">
+        select o.* from `order` o where 1 = 1
+        <if test="offerId != null and offerId != ''">
+            and o.offer_id = #{offerId}
+        </if>
+    </select>
+
+</mapper>

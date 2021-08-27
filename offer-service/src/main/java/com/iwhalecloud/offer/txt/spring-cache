@@ -1,0 +1,130 @@
+/**
+     *  redis 缓存的配置文件
+     *  改版本的spring-boot-starter-redis 基于spring-data-redis 和 jedis客户端 2.x版本的springBoot 基于lettuce
+     *  CachingConfigurerSupport 类中有4个方法
+     *  CacheManager
+     *  CacheResolver
+     *  KeyGenerator
+     *  CacheErrorHandler
+     */
+
+    /**
+     *  spring-content包下的spring cache注解，主要包括6个
+     *  1、@Cacheable(方法、类)  标记的方法在执行后，spring cache将缓存其结果，spring cache将结果作为值，至于键，有两种：
+     *  默认策略和自定义策略，当一个支持缓存的方法在对象内部调用时，是不会触发缓存功能的。
+     *  value, cacheNames : 缓存的名称，用来存放我们要保存的key的集合
+     *  key :  缓存的key   可以自定义或者使用默认的key生成策略，方法参数和root对象
+     *       (#参数名  或者  #参数名.属性名) (result #result) ->执行上下文    或者root对象 包括：
+     *        methodName    #root.methodName
+     *        method（#root.method.name） #root.method.name
+     *        target   #root.target
+     *        targetClass  #root.targetClass
+     *        args   #root.arg[0]
+     *        caches  当前方法调用使用的缓存列表（如@Cacheable(value={"cache1", "cache2"})），则有两个cache #root.caches[0].name
+     *  condition: 缓存条件，参数是规定这个缓存触发的字符串拼接， 条件符合缓存
+     *        condition="#channel != null"
+     *  unless:  规定缓存在什么时候不触发，unless= "#result != null"  添加符合不缓存
+     *
+        String keyGenerator() default "";  key的生成器，key 和 keyGenerator 两者选择一个使用
+        实现 org.springframework.cache.interceptor.KeyGenerator 接口的类bean,用于统一自定义生成key
+
+        String cacheManager() default "";  指定缓存管理器
+        用于选择使用哪个cacheManager
+
+         String cacheResolver() default ""; 指定获取解析器
+         实现 org.springframework.cache.interceptor.CacheResolver 接口的类bean，用于自定义如何处理缓存
+     *  boolean sync() default false;  是否使用异步模式
+     *  其中keyGenerator cacheManager  cacheResolver适合做全局的配置
+     *
+     *  使用： 1、 声明某些方法使用缓存
+     *         2、配置spring对缓存的支持
+     */
+
+2、@CacheConfig（类）
+当我们需要缓存的地方越来越多，你可以使用@CacheConfig(cacheNames = {"myCache"})注解来统一指定value的值，
+这时可省略value，如果你在你的方法依旧写上了value，那么依然以方法的value值为准。
+属性值：
+cacheNames
+String keyGenerator() default "";
+String cacheManager() default "";
+String cacheResolver() default "";
+
+@CacheConfig("books")
+public class BookRepositoryImpl implements BookRepository {
+    @Cacheable
+    public Book findBook(ISBN isbn) {...}
+}
+
+3、@CachePut（方法、类）
+主要用于配置方法，能够根据方法请求参数，对结果缓存和@Cacheable不同的是，他每次都会触发真实的方法调用，
+用于用于更新数据，但要注意，注解的value 和 key值必须和要更新的缓存相同
+属性：
+value
+cacheNames
+key
+condition
+unless
+String keyGenerator() default "";  key生成
+String cacheManager() default "";  缓存管理
+String cacheResolver() default "";  缓存解析
+
+
+4、@CacheEvict（方法、类） 标记的方法，会在方法执行前后，移除spring cache中的某些元素
+用于方法配置，根据一定的条件，清空缓存
+value
+cacheNames
+key
+condition
+unless
+String keyGenerator() default "";  key生成
+String cacheManager() default "";  缓存管理
+String cacheResolver() default "";  缓存解析
+boolean allEntries() default false
+是否清空所有缓存内容，缺省为false，如果设置为true，则方法调用后，清空所有缓存，@CachEvict(value=”testcache”,allEntries=true)
+boolean beforeInvocation() default false
+是否在方法执行前就清空，缺省为 false，如果指定为 true，则在方法还没有执行的时候就清空缓存，
+缺省情况下，如果方法执行抛出异常，则不会清空缓存
+//清除一条缓存，key为要清空的数据
+    @CacheEvict(value="emp",key="#id")
+    public void delect(int id) {
+        newJobDao.deleteAllById(id);
+    }
+
+    //方法调用后清空所有缓存 清空缓存名为accountCache 下的所有缓存
+    @CacheEvict(value="accountCache",allEntries=true)
+    public void delectAll() {
+        newJobDao.deleteAll();
+    }
+
+    //方法调用前清空所有缓存
+    @CacheEvict(value="accountCache",beforeInvocation=true)
+    public void delectAll() {
+        newJobDao.deleteAll();
+    }
+
+5、@Caching （方法、类）
+有时需要组合多个Cache注解使用，使用@Caching注解，组合了多个注解标签
+Cacheable[] cacheable() default {};
+CachePut[] put() default {};
+CacheEvict[] evict() default {};
+
+@Caching(cacheable = {
+            @Cacheable(value = "emp",key = "#p0"),
+            ...
+    },
+    put = {
+            @CachePut(value = "emp",key = "#p0"),
+            ...
+    },evict = {
+            @CacheEvict(value = "emp",key = "#p0"),
+            ....
+    })
+    public User save(User user) {
+        ....
+    }
+
+6、@EnableCaching (类)
+
+
+
+

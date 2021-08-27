@@ -1,0 +1,50 @@
+spring管理数据库的几种方式： 1、编程式事务管理   2、声明式事务管理：xml配置方式  注解声明式
+
+@Transactional 注解 开启事务  针对：增加，删除，修改操作  RuntimeException及其子类和Error，其他的比如IOException异常不会捕获
+可以指定异常回滚的类如：@Transactional(rollbackFor = Exception.class) 则凡是Exception类和子类的异常都可以捕获，包括IOException
+
+@Transactional 注解可以添加到类、接口、方法上 如果加到类或者接口上 相当于给所有的public方法添加了事务，
+方法上注解属性会覆盖类上注解的相同属性
+类内部方法调用本类内部的其他方法并不会引起事务行为，即使被调用方法使用@Transactional注解进行修饰
+当不加@Transactional注解时，如：insert插入数据，然后抛出异常，此时事务不会回滚，因此即使异常数据仍插入成功
+当加了@Transactional注解时，如：insert插入数据，然后抛出异常，此时事务回滚，数据插入失败
+
+@Transactional注解的参数：
+
+Value     String    可选的限定描述符，指定使用的事务管理器
+
+propagation   enum: Propagation   可选的事务传播行为设置
+REQUIRED require -支持当前事务，如果当前没有事务，就新建一个事务
+SUPPORTS supports  -支持当前事务，如果当前没有事务，就以非事务的方式执行: 因此不会回滚
+MANDATORY  mandatory -支持当前事务，如果当前没有事务，就抛出异常: 抛出事务异常，同时事务回滚
+REQUIRES_NEW  requires_new -新建事务，如果当前事务存在，则挂起事务，如果当前没有事务，相当于REQUIRE
+NOT_SUPPORTED  not_supported  -以非事务的方式执行操作，如果当前存在事务，就把当前事务挂起
+NEVER   never -以非事务的方式执行操作，如果当前存在事务，则抛出异常
+NESTED  nested  -如果当前存在事务，则创建一个事务作为当前事务的嵌套事务，如果当前没有事务，则新建一个事务相当于REQUIRED
+
+isolation  enum: Isolation  事务隔离级别设置  若干个并发事务之间的隔离层程度
+DEFAULT  default  使用底层数据库的隔离级别，对于大多数数据库使用
+READ_UNCOMMITTED  read_uncommitted  改事务隔离级别表示一个事务可以读取另一个事务修改但未提交的数据，改级别不能防止脏读，不可重复读，幻读，因此很少使用改隔离级别
+READ_COMMITTED    read_committed 一个事务只能读取另一个事务已经提交的数据，防止脏读
+REPEATABLE_READ   repeatable_read 一个事务在整个过程中可以多次重复执行某个查询，并且每次返回的记录都相同，可以防止脏读和不可重复读
+SERIALIZABLE      serializable 所有的事务依次逐个执行，这样事务之间完全不干扰，可以防止脏读，不可重复读，幻读，但是影响性能
+
+
+readOnly  boolean  读写或者只读事务 默认读写
+只读事务用于客户代码只读但不修改数据的情形，只读事务用于特定情景下的优化，比如使用Hibernate的时候。
+
+timeout   int(单位 s)  设置事务的超时时间
+所谓事务超时，就是指一个事务所允许执行的最长时间，如果超过该时间限制但事务还没有完成，则自动回滚事务
+默认设置为底层事务系统的超时值，如果底层数据库事务系统没有设置超时值，那么就是none，没有超时限制。
+
+rollbackFor   class对象数组 必须继承自Throwable接口  导致事务回滚的异常类数组
+rollbackForClassName  类名数组 必须继承自Throwable     导致事务回滚的异常类名字数组
+noRollbackFor   class对象数组 必须继承自Throwable   不会导致事务回滚的异常类数组
+noRollbackForClassName  类名称数组  必须继承自Throwable  不会导致事务回滚的异常类名字数组
+
+
+数据库的脏读、不可重复读、幻读：
+
+
+mysql数据库的隔离级别：
+

@@ -1,0 +1,112 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: oscarmall-dev-offer
+#  cloud:
+#     consul:
+#     host: 127.0.0.1
+#     discovery:
+#       prefer-ip-address: true
+  datasource:
+    druid:
+      driver-class-name: com.mysql.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/yiibaidb
+      username: root
+      password: dsq19920609
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 30000
+    hikari:
+      connection-timeout: 60000
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: guest
+    password: guest
+    publisher-confirms: true
+    virtual-host: /
+#  redis:
+#    cluster:
+#      nodes: 127.0.0.1:7001,127.0.0.1:7002,127.0.0.1:7003
+#    database: 0
+#    timeout: 60000
+#    pool:
+#      max-idle: 8
+#      max-active: 8
+#      max-wait: 1
+#      min-idle: 0
+#    password:
+
+#    host: 127.0.0.1
+#    port: 6379
+#    timeout: 3000
+#    password: dsq19920609
+#    pool:
+#      max-wait: 3
+#      max-active: 8
+#      max-idle: 2
+
+#  kafka:
+#    bootstrap-servers: 127.0.0.1:9092
+#    producer:
+#      retries: 0
+#      batch-size: 4096
+#      buffer-memory: 40960
+#      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+#      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+#    consumer:
+#      group-id: my
+#      auto-commit-interval: 100
+#      auto-offset-reset: latest
+#      enable-auto-commit: true
+#      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#    listener:
+#      concurrency: 3
+  session:
+    store-type: none
+  devtools:
+    remote:
+      restart:
+        enabled: true
+        additional-paths: src/main/java #重启目录
+        exclude: WEB-INF/**
+  freemarker:
+    cache: false
+#kafka
+#kafka:
+#  topic:
+#  default: my-kafka-topic
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
+# 无用的配置
+ftf:
+  filePath: http://localhost:8088
+
+content:
+  userName: admin
+  password: kyjufskifas2jsfs
+  remoteAddress: 192.168.1.1
+
+
+# 日志  sql 日志打印
+logging:
+  config: classpath:logback.xml
+  level:
+      com.iwhalecloud.offer.mapper: debug
+
+#springBoot热部署
+debug: true
+# rabbitmq
+
+
+
+
